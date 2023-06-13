@@ -36,7 +36,7 @@ class BooksBalances {
           credits: 0.00,
         );
 
-  double get sources => (liabilities + equity + revenue - expenses);
+  double get sources => (liabilities + equity + revenue - expenses - drawings);
 
   @override
   String toString() {
@@ -169,9 +169,14 @@ class Books extends Dea {
           case AccountType.revenues:
             // adding amount to revenues
             balance.revenue += amount;
+            break;
           case AccountType.expenses:
             // adding amount to expenses
             balance.expenses += amount;
+            break;
+          case AccountType.drawings:
+            // adding amount to drawings
+            balance.drawings += amount;
             break;
           default:
         }
