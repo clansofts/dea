@@ -1,7 +1,27 @@
+# Double Entry Accounting
+Double entry accounting is a systematic approach that ensures every financial transaction is recorded in at least two accounts. An account represent a bucket or basket that holds value. Value here means balances or money in other words.
+
+This system follows the principle of duality, which states that every transaction has equal and opposite effects on at least two accounts, meaning that value flows from a source account to a destination account. This ensures that the accounting equation
+
+    Assets = Liabilities + Equity
+
+remains in balance. It must be noted the above equation can be expanded to accommodate the Revenues , Expenses and Drawings. Equity is derived from
+
+    Equity = Common Stocks + Paid Up Capital + Retained Earning).
+
+    Retained Earnings = Revenues — Expenses.
+
+Therefore rewriting the equations as
+
+    Assets = Liabilities + ((Common Stocks + Paid Up Capital) +(Revenues — Expenses) — Drawings))
+
+Traditionally an account is usually represented in a T format meaning it got two sides left (Debit — DR) and right (Credit — CR).
+
 double entry accounting command-line application with an entrypoint in `bin/`, library code
 in `lib/`, and example unit test in `test/`.
 
-Find some introduction on double entry accounting concept documentation https://medium.com/p/bcc2bf2e78e2
+Find more  on double entry accounting concept documentation https://medium.com/p/bcc2bf2e78e2
+
 
 ## Contributing
 
