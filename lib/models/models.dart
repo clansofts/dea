@@ -1,15 +1,15 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:uuid/uuid.dart';
 
-enum ProfileType { person, business }
+import 'enums.dart';
 
-class Owner {
+class Merchant {
   final String name;
   final String? phone;
   final String? email;
   final ProfileType profileType;
 
-  Owner({
+  Merchant({
     required this.name,
     required this.profileType,
     this.phone,
@@ -18,7 +18,7 @@ class Owner {
 
   @override
   String toString() {
-    return 'Owner(name: $name, phone: $phone, email: $email, profileType: $profileType)';
+    return 'Merchant(name: $name, phone: $phone, email: $email, profileType: $profileType)';
   }
 }
 
@@ -41,8 +41,6 @@ class Party {
   }
 }
 
-enum AccountType { assets, liabilities, equity, revenues, expenses, drawings }
-
 class Account {
   final String accountId;
   final AccountType accountType;
@@ -64,23 +62,24 @@ class Account {
 }
 
 class Tx {
+  final String merchantId;
   final String txnId;
   final DateTime date;
 
   Tx({
+    required this.merchantId,
     required this.txnId,
     required this.date,
   });
 
   @override
-  String toString() => 'Tx(txnId: $txnId, date: $date)';
+  String toString() =>
+      'Tx(merchantId: $merchantId, txnId: $txnId, date: $date)';
 }
-
-enum JournalType { dr, cr }
 
 class Journal {
   final String journalId;
-  final String owner;
+  final String merchant;
   final JournalType journalType;
   final String account;
   final String? tx;
@@ -91,7 +90,7 @@ class Journal {
 
   Journal({
     required this.journalId,
-    required this.owner,
+    required this.merchant,
     required this.journalType,
     required this.account,
     this.tx,
@@ -108,7 +107,7 @@ class Journal {
   }) : this(
           journalId: Uuid().v4(),
           journalType: JournalType.cr,
-          owner: "",
+          merchant: "",
           account: account,
           tx: "",
           debit: 0.00,
@@ -118,12 +117,12 @@ class Journal {
 
   @override
   String toString() {
-    return 'Journal(journalId: $journalId, owner: $owner, journalType: $journalType, account: $account, tx: $tx, party: $party, debit: $debit, credit: $credit, description: $description)';
+    return 'Journal(journalId: $journalId, merchant: $merchant, journalType: $journalType, account: $account, tx: $tx, party: $party, debit: $debit, credit: $credit, description: $description)';
   }
 
   Journal copyWith({
     String? journalId,
-    String? owner,
+    String? merchant,
     JournalType? journalType,
     String? account,
     String? tx,
@@ -134,7 +133,7 @@ class Journal {
   }) {
     return Journal(
       journalId: journalId ?? this.journalId,
-      owner: owner ?? this.owner,
+      merchant: merchant ?? this.merchant,
       journalType: journalType ?? this.journalType,
       account: account ?? this.account,
       tx: tx ?? this.tx,
@@ -143,5 +142,44 @@ class Journal {
       credit: credit ?? this.credit,
       description: description ?? this.description,
     );
+  }
+}
+
+class BooksBalances {
+  double assets;
+  double liabilities;
+  double equity;
+  double revenue;
+  double expenses;
+  double drawings;
+  double debits;
+  double credits;
+
+  BooksBalances(
+      {this.assets = 0.00,
+      this.liabilities = 0.00,
+      this.equity = 0.00,
+      this.revenue = 0.00,
+      this.expenses = 0.00,
+      this.drawings = 0.00,
+      this.debits = 0.00,
+      this.credits = 0.00});
+
+  BooksBalances.init()
+      : this(
+            assets: 0.00,
+            liabilities: 0.00,
+            equity: 0.00,
+            revenue: 0.00,
+            expenses: 0.00,
+            drawings: 0.00,
+            debits: 0.00,
+            credits: 0.00);
+
+  double get sources => (liabilities + equity + revenue - expenses - drawings);
+
+  @override
+  String toString() {
+    return 'Balances(assets: $assets, liabilities: $liabilities, equity: $equity, revenue: $revenue, expenses: $expenses, drawings: $drawings)';
   }
 }

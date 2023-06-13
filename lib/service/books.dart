@@ -1,76 +1,40 @@
 import 'package:dea/dea.dart';
+import 'package:dea/models/enums.dart';
+import 'package:dea/models/models.dart';
+import 'package:dea/repositories/accounts.dart';
+import 'package:dea/repositories/journals.dart';
+import 'package:dea/repositories/merchants.dart';
+import 'package:dea/repositories/parties.dart';
+import 'package:dea/repositories/storage.dart';
+import 'package:dea/repositories/transactions.dart';
 import 'package:uuid/uuid.dart';
 
-import 'models.dart';
+class Books implements Dea {
+  // To easily manage the collections of the entities we include all available repositories
+  final IStorageRepository merchantsRepo = MerchantsRepository(storage: []);
+  final IStorageRepository accountsRepo = AccountsRepository(storage: []);
+  final IStorageRepository journalsRepo = JournalsRepository(storage: []);
+  final IStorageRepository partiesRepo = PartiesRepository(storage: []);
+  final IStorageRepository txsRepo = TxsRepository(storage: []);
 
-class BooksBalances {
-  double assets;
-  double liabilities;
-  double equity;
-  double revenue;
-  double expenses;
-  double drawings;
-  double debits;
-  double credits;
-
-  BooksBalances({
-    required this.assets,
-    required this.liabilities,
-    required this.equity,
-    required this.revenue,
-    required this.expenses,
-    required this.drawings,
-    required this.debits,
-    required this.credits,
-  });
-
-  BooksBalances.init()
-      : this(
-          assets: 0.00,
-          liabilities: 0.00,
-          equity: 0.00,
-          revenue: 0.00,
-          expenses: 0.00,
-          drawings: 0.00,
-          debits: 0.00,
-          credits: 0.00,
-        );
-
-  double get sources => (liabilities + equity + revenue - expenses - drawings);
-
-  @override
-  String toString() {
-    return 'Balances(assets: $assets, liabilities: $liabilities, equity: $equity, revenue: $revenue, expenses: $expenses, drawings: $drawings)';
-  }
-}
-
-class Books extends Dea {
-  late final Owner owner;
-  late final List<Account> accounts;
-  late final List<Party> parties;
-  late final List<Tx> transactions;
-  late final List<Journal> journals;
-
+  // only used internally
   List<Journal> _journals = [];
   late Tx _tx;
 
   @override
-  void setupOwner({
+  void setupMerchant({
     required String name,
     String? phone,
     String? email,
   }) {
-    // setting up the base owner info
-    owner = Owner(
+    // setting up the base merchant info
+    final merchant = Merchant(
         name: name,
         email: email,
         phone: phone,
         profileType: ProfileType.business);
-    // initialize all books storage units
-    accounts = [];
-    parties = [];
-    transactions = [];
-    journals = [];
+    // initialize all books ownership
+    merchantsRepo.create(merchant);
   }
 
   @override
@@ -83,12 +47,12 @@ class Books extends Dea {
     // validate account is properly added
     final account =
         Account(accountId: id, name: name, accountType: accountType);
-    accounts.add(account);
+    accountsRepo.create(account);
   }
 
   @override
-  void transact() {
-    _tx = Tx(txnId: Uuid().v4(), date: DateTime.now());
+  void transact(String merchantId) {
+    _tx = Tx(txnId: Uuid().v4(), date: DateTime.now(), merchantId: merchantId);
   }
 
   @override
@@ -101,7 +65,7 @@ class Books extends Dea {
       final d = Journal.create(
               account: account, amount: amount, description: description)
           .copyWith(
-              owner: owner.name,
+              merchant: _tx.merchantId,
               journalType: JournalType.dr,
               tx: _tx.txnId,
               debit: amount);
@@ -122,7 +86,7 @@ class Books extends Dea {
       final d = Journal.create(
               account: account, amount: amount, description: description)
           .copyWith(
-              owner: owner.name,
+              merchant: _tx.merchantId,
               journalType: JournalType.cr,
               tx: _tx.txnId,
               credit: amount);
@@ -181,66 +145,73 @@ class Books extends Dea {
           default:
         }
       }
-      print(balance);
+      //print(balance);
 
       if (balance.debits != balance.credits) {
         final note = balance.debits < balance.credits
             ? 'debits less by ${balance.credits - balance.debits}'
             : 'debits more by ${balance.debits - balance.credits}';
-        throw "{commit} a total debits must always equal total credits for double entry accounting transaction. $note";
+        throw "total debits ${balance.debits} must always equal total credits ${balance.credits}. $note";
       }
 
       if (balance.assets != balance.sources) {
         throw "{commit} transaction does not satisfy double entry equation: {assets = liabilities + equity / assets = liabilities + (capital - drawings) + (revenue - expenses)} ";
       }
 
-      postTransaction(tx: _tx, entries: _journals);
+      txsRepo.create(_tx);
+      journalsRepo.createAll(_journals);
+
       print("{commit} successful");
     } catch (e) {
       print("{commit}: ${e.toString()}");
     }
   }
 
-  @override
-  void postTransaction({
-    required Tx tx,
-    required List<Journal> entries,
-  }) {
-    try {
-      transactions.add(tx);
-      journals.addAll(entries);
-    } catch (e) {
-      print("{postTransaction}: ${e.toString()}");
-    }
-  }
-
   Account getAccount(String id) {
+    final accounts = accountsRepo.findAll() as List<Account>;
     return accounts.firstWhere((element) => element.accountId == id);
   }
 
-  List<Account> getAccounts() {
-    return accounts;
+  @override
+  List<Journal> getAccountStatement({required String accountId}) {
+    final journals = journalsRepo.findAll() as List<Journal>;
+    return journals.where((element) => element.account == accountId).toList();
   }
 
-  List<Tx> _getTransactions() {
-    return transactions;
+  @override
+  List<Journal> getBalanceSheet({required String merchantId}) {
+    return journalsRepo.findAll() as List<Journal>;
   }
 
-  List<Journal> _getjournals() {
-    return journals;
+  @override
+  List<Journal> getIncomeStatement({required String merchantId}) {
+    final journals = journalsRepo.findAll() as List<Journal>;
+    return journals.where((element) => element.merchant == merchantId).toList();
   }
 
-  List<Journal> getAccountStatement(String accountId) {
-    return _getjournals()
-        .where((element) => element.account == accountId)
-        .toList();
+  @override
+  List<Journal> getTrialBalances({required String merchantId}) {
+    final journals = journalsRepo.findAll() as List<Journal>;
+    return journals.where((element) => element.merchant == merchantId).toList();
   }
 
-  List<Journal> getLedgers() {
-    return _getjournals();
+  @override
+  List<Account> getAccounts({required String merchantId}) {
+    return accountsRepo.findAll() as List<Account>;
   }
 
-  List<Tx> getTrialBalances() {
-    return _getTransactions();
+  @override
+  List<Party> getParties({required String merchantId}) {
+    return partiesRepo.findAll() as List<Party>;
+  }
+
+  @override
+  List<Tx> getTransactions({required String merchantId}) {
+    return txsRepo.findAll() as List<Tx>;
+  }
+
+  @override
+  Merchant getMerchant({required String merchantId}) {
+    return merchantsRepo.findOne(merchantId);
   }
 }
