@@ -83,6 +83,10 @@ class Books implements Dea {
     String? description,
   }) {
     try {
+      // validate amount
+
+      // validate account
+      // create an instance of the jounal entry
       final d = Journal.create(
               account: account, amount: amount, description: description)
           .copyWith(
@@ -90,7 +94,7 @@ class Books implements Dea {
               journalType: JournalType.cr,
               tx: _tx.txnId,
               credit: amount);
-
+      // pushing debit entry to current trasactions journals
       _journals.add(d);
     } catch (e) {
       print("{credit}: ${e.toString()}");
